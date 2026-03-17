@@ -1,5 +1,5 @@
 import React from "react";
-import { Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { Navigate, useLocation, Outlet } from "react-router-dom";
 import Navbar from "components/navbar/RTL";
 import Sidebar from "components/sidebar/RTL";
 import Footer from "components/footer/Footer";
@@ -9,7 +9,7 @@ export default function RTL(props) {
   const { ...rest } = props;
   const location = useLocation();
   const [open, setOpen] = React.useState(true);
-  const [currentRoute, setCurrentRoute] = React.useState("Main Dashboard");
+  const [currentRoute, setCurrentRoute] = React.useState("Dashboard");
 
   React.useEffect(() => {
     window.addEventListener("resize", () =>
@@ -44,17 +44,10 @@ export default function RTL(props) {
     }
     return activeNavbar;
   };
-  const getRoutes = (routes) => {
-    return routes.map((prop, key) => {
-      if (prop.layout === "/rtl") {
-        return (
-          <Route path={`/${prop.path}`} element={prop.component} key={key} />
-        );
-      } else {
-        return null;
-      }
-    });
-  };
+  const token = localStorage.getItem("token");
+  if (!token) {
+    return <Navigate to="/auth/sign-in" replace />;
+  }
 
   document.documentElement.dir = "rtl";
   return (
@@ -64,26 +57,22 @@ export default function RTL(props) {
       <div className="h-full w-full bg-lightPrimary dark:!bg-navy-900">
         {/* Main Content */}
         <main
-          className={`mx-[12px] h-full flex-none transition-all md:pe-2 xl:mr-[313px]`}
+          className={`mx-[12px] h-full flex-none transition-all md:pe-2 ${
+            open ? "xl:mr-[313px]" : "xl:mr-0"
+          }`}
         >
           {/* Routes */}
           <div className="h-full">
             <Navbar
-              onOpenSidenav={() => setOpen(true)}
+              onToggleSidenav={() => setOpen((prev) => !prev)}
+              isSidenavOpen={open}
               logoText={"Horizon UI Tailwind React"}
               brandText={currentRoute}
               secondary={getActiveNavbar(routes)}
               {...rest}
             />
             <div className="pt-5s mx-auto mb-auto h-full min-h-[84vh] p-2 md:pr-2">
-              <Routes>
-                {getRoutes(routes)}
-
-                <Route
-                  path="/"
-                  element={<Navigate to="/admin/default" replace />}
-                />
-              </Routes>
+              <Outlet />
             </div>
             <div className="p-3">
               <Footer />

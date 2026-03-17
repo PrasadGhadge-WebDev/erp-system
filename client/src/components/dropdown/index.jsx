@@ -20,7 +20,7 @@ function useOutsideAlerter(ref, setX) {
 }
 
 const Dropdown = (props) => {
-  const { button, children, classNames, animation } = props;
+  const { button, children, classNames, animation, closeOnSelect } = props;
   const wrapperRef = React.useRef(null);
   const [openWrapper, setOpenWrapper] = React.useState(false);
   useOutsideAlerter(wrapperRef, setOpenWrapper);
@@ -36,6 +36,11 @@ const Dropdown = (props) => {
             ? animation
             : "origin-top-right transition-all duration-300 ease-in-out"
         } ${openWrapper ? "scale-100" : "scale-0"}`}
+        onClick={() => {
+          if (closeOnSelect) {
+            setOpenWrapper(false);
+          }
+        }}
       >
         {children}
       </div>

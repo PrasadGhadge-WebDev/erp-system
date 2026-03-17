@@ -13,25 +13,35 @@ const protect = async (req, res, next) => {
 
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-      req.user = await User.findById(decoded.id).select('-password');
+      const user = await User.findById(decoded.id).select('-password');
+      if (!user) {
+        res.status(401);
+        return next(new Error('Not authorized, user not found'));
+      }
 
-      next();
+      req.user = user;
+      return next();
     } catch (error) {
       console.error(error);
       res.status(401);
-      next(new Error('Not authorized, token failed'));
+      return next(new Error('Not authorized, token failed'));
     }
   }
 
   if (!token) {
     res.status(401);
-    next(new Error('Not authorized, no token'));
+    return next(new Error('Not authorized, no token'));
   }
 };
 
 // Grant access to specific roles
 const authorize = (...roles) => {
   return async (req, res, next) => {
+    if (!req.user) {
+      res.status(401);
+      return next(new Error('Not authorized'));
+    }
+
     // Populate role string from User's role_id reference
     await req.user.populate('role_id');
 

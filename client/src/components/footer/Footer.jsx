@@ -1,52 +1,40 @@
 const Footer = () => {
   return (
-    <div className="flex w-full flex-col items-center justify-between px-1 pb-8 pt-3 lg:px-8 xl:flex-row">
-      <h5 className="mb-4 text-center text-sm font-medium text-gray-600 sm:!mb-0 md:text-lg">
-        <p className="mb-4 text-center text-sm text-gray-600 sm:!mb-0 md:text-base">
-          ©{1900 + new Date().getYear()} Horizon UI. All Rights Reserved.
+    <footer className="w-full px-6 pb-8 pt-4">
+      <div className="flex flex-col items-center justify-between gap-4 text-gray-600 dark:text-gray-400 xl:flex-row">
+        
+        <p className="text-sm">
+          © {new Date().getFullYear()} Horizon UI. All Rights Reserved.
         </p>
-      </h5>
-      <div>
-        <ul className="flex flex-wrap items-center gap-3 sm:flex-nowrap md:gap-10">
+
+        <ul className="flex flex-wrap items-center gap-6 text-sm">
           <li>
-            <a
-              target="blank"
-              href="mailto:hello@simmmple.com"
-              className="text-base font-medium text-gray-600 hover:text-gray-600"
-            >
+            <a href="mailto:hello@simmmple.com" className="hover:text-gray-900 dark:hover:text-white">
               Support
             </a>
           </li>
+
           <li>
-            <a
-              target="blank"
-              href="https://simmmple.com/licenses"
-              className="text-base font-medium text-gray-600 hover:text-gray-600"
-            >
+            <a href="https://simmmple.com/licenses" className="hover:text-gray-900 dark:hover:text-white">
               License
             </a>
           </li>
+
           <li>
-            <a
-              target="blank"
-              href="https://simmmple.com/terms-of-service"
-              className="text-base font-medium text-gray-600 hover:text-gray-600"
-            >
+            <a href="https://simmmple.com/terms-of-service" className="hover:text-gray-900 dark:hover:text-white">
               Terms of Use
             </a>
           </li>
+
           <li>
-            <a
-              target="blank"
-              href="https://blog.horizon-ui.com/"
-              className="text-base font-medium text-gray-600 hover:text-gray-600"
-            >
+            <a href="https://blog.horizon-ui.com/" className="hover:text-gray-900 dark:hover:text-white">
               Blog
             </a>
           </li>
         </ul>
+
       </div>
-    </div>
+    </footer>
   );
 };
 

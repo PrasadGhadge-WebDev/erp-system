@@ -1,19 +1,16 @@
-import React from "react";
+import { useEffect, useMemo, useState } from "react";
 import MiniCalendar from "components/calendar/MiniCalendar";
 import WeeklyRevenue from "views/admin/default/components/WeeklyRevenue";
 import TotalSpent from "views/admin/default/components/TotalSpent";
 import PieChartCard from "views/admin/default/components/PieChartCard";
-import { IoMdHome } from "react-icons/io";
-import { IoDocuments } from "react-icons/io5";
-import { MdBarChart, MdDashboard } from "react-icons/md";
 import {
-  getCompanies,
-  getCustomers,
-  getEmployees,
-  getLeads,
-  getProducts,
-  getUsers,
-} from "api/erp";
+  MdAccountBalance,
+  MdBarChart,
+  MdGroup,
+  MdInventory2,
+  MdLocalShipping,
+  MdShoppingCart,
+} from "react-icons/md";
 
 import { columnsDataCheck, columnsDataComplex } from "./variables/columnsData";
 
@@ -24,118 +21,98 @@ import DailyTraffic from "views/admin/default/components/DailyTraffic";
 import TaskCard from "views/admin/default/components/TaskCard";
 import tableDataCheck from "./variables/tableDataCheck.json";
 import tableDataComplex from "./variables/tableDataComplex.json";
+import { apiFetch } from "api/client";
+import Card from "components/card";
 
 const Dashboard = () => {
-  const [stats, setStats] = React.useState({
-    companies: 0,
-    users: 0,
-    customers: 0,
-    leads: 0,
-    products: 0,
-    employees: 0,
-  });
-  const [loading, setLoading] = React.useState(true);
-  const [error, setError] = React.useState("");
+  const [summary, setSummary] = useState(null);
+  const [summaryError, setSummaryError] = useState("");
+  const [loadingSummary, setLoadingSummary] = useState(true);
 
-  React.useEffect(() => {
-    let isMounted = true;
-
-    const loadStats = async () => {
-      setLoading(true);
-      setError("");
+  useEffect(() => {
+    let active = true;
+    const loadSummary = async () => {
+      setLoadingSummary(true);
+      setSummaryError("");
       try {
-        const results = await Promise.allSettled([
-          getCompanies(),
-          getUsers(),
-          getCustomers(),
-          getLeads(),
-          getProducts(),
-          getEmployees(),
-        ]);
-
-        const getCount = (result) =>
-          result.status === "fulfilled" && Array.isArray(result.value)
-            ? result.value.length
-            : 0;
-
-        const [
-          companiesResult,
-          usersResult,
-          customersResult,
-          leadsResult,
-          productsResult,
-          employeesResult,
-        ] = results;
-
-        if (!isMounted) return;
-
-        setStats({
-          companies: getCount(companiesResult),
-          users: getCount(usersResult),
-          customers: getCount(customersResult),
-          leads: getCount(leadsResult),
-          products: getCount(productsResult),
-          employees: getCount(employeesResult),
-        });
-
-        const failures = results.filter((result) => result.status === "rejected");
-        if (failures.length > 0) {
-          setError("Some dashboard stats could not be loaded.");
-        }
+        const data = await apiFetch("/api/summary");
+        if (!active) return;
+        setSummary(data);
       } catch (err) {
-        if (!isMounted) return;
-        setError(err.message || "Failed to load dashboard stats.");
+        if (!active) return;
+        setSummaryError(err?.message || "Failed to load summary");
       } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
+        if (active) setLoadingSummary(false);
       }
     };
 
-    loadStats();
-
+    loadSummary();
     return () => {
-      isMounted = false;
+      active = false;
     };
   }, []);
 
+  const counts = summary?.counts || {};
+  const totals = summary?.totals || {};
+  const currencyFormatter = useMemo(
+    () =>
+      new Intl.NumberFormat(undefined, {
+        style: "currency",
+        currency: "USD",
+        maximumFractionDigits: 0,
+      }),
+    []
+  );
+  const formatCount = (value) =>
+    loadingSummary ? "..." : (value || 0).toLocaleString();
+  const formatCurrency = (value) =>
+    loadingSummary ? "..." : currencyFormatter.format(value || 0);
+
   return (
     <div>
+      {summaryError ? (
+        <Card extra="mb-5 p-4">
+          <p className="text-sm text-red-500">
+            {summaryError.includes("Not authorized")
+              ? "Please sign in to view live metrics."
+              : summaryError}
+          </p>
+        </Card>
+      ) : null}
       {/* Card widget */}
 
       <div className="mt-3 grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-3 3xl:grid-cols-6">
         <Widget
-          icon={<MdBarChart className="h-7 w-7" />}
-          title={"Companies"}
-          subtitle={loading ? "..." : stats.companies}
-        />
-        <Widget
-          icon={<IoDocuments className="h-6 w-6" />}
-          title={"Users"}
-          subtitle={loading ? "..." : stats.users}
-        />
-        <Widget
-          icon={<MdBarChart className="h-7 w-7" />}
+          icon={<MdGroup className="h-7 w-7" />}
           title={"Customers"}
-          subtitle={loading ? "..." : stats.customers}
+          subtitle={formatCount(counts.customers)}
         />
         <Widget
-          icon={<MdDashboard className="h-6 w-6" />}
-          title={"Leads"}
-          subtitle={loading ? "..." : stats.leads}
+          icon={<MdInventory2 className="h-6 w-6" />}
+          title={"Products"}
+          subtitle={formatCount(counts.products)}
+        />
+        <Widget
+          icon={<MdShoppingCart className="h-7 w-7" />}
+          title={"Sales Orders"}
+          subtitle={formatCount(counts.sales_orders)}
+        />
+        <Widget
+          icon={<MdLocalShipping className="h-6 w-6" />}
+          title={"Purchase Orders"}
+          subtitle={formatCount(counts.purchase_orders)}
         />
         <Widget
           icon={<MdBarChart className="h-7 w-7" />}
-          title={"Products"}
-          subtitle={loading ? "..." : stats.products}
+          title={"Sales Revenue"}
+          subtitle={formatCurrency(totals.sales)}
         />
         <Widget
-          icon={<IoMdHome className="h-6 w-6" />}
-          title={"Employees"}
-          subtitle={loading ? "..." : stats.employees}
+          icon={<MdAccountBalance className="h-6 w-6" />}
+          title={"Payments Received"}
+          subtitle={formatCurrency(totals.payments)}
         />
       </div>
-      {error ? <p className="mt-3 text-sm text-red-500">{error}</p> : null}
 
       {/* Charts */}
 

@@ -3,10 +3,23 @@ const User = require('../models/core/User');
 const Role = require('../models/core/Role'); // Needed to check roles if necessary
 const Company = require('../models/core/Company');
 
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '30d';
+
+const normalizeEmail = (value) =>
+  typeof value === 'string' ? value.trim().toLowerCase() : '';
+
+const normalizeString = (value) =>
+  typeof value === 'string' ? value.trim() : '';
+
+const isValidEmail = (value) => /^\S+@\S+\.\S+$/.test(value);
+
+const isStrongPassword = (value) =>
+  typeof value === 'string' && value.length >= 8;
+
 // Generate JWT
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: '30d',
+    expiresIn: JWT_EXPIRES_IN,
   });
 };
 
@@ -15,23 +28,46 @@ const generateToken = (id) => {
 // @access  Public
 const loginUser = async (req, res, next) => {
   try {
-    const { email, password } = req.body;
+    const email = normalizeEmail(req.body.email);
+    const password = req.body.password || '';
 
-    const user = await User.findOne({ email }).populate('role_id').populate('company_id');
+    if (!email || !password) {
+      res.status(400);
+      throw new Error('Email and password are required');
+    }
+
+    if (!isValidEmail(email)) {
+      res.status(400);
+      throw new Error('Invalid email address');
+    }
+
+    const user = await User.findOne({ email })
+      .select('+password')
+      .populate('role_id')
+      .populate('company_id');
 
     if (user && (await user.matchPassword(password))) {
+      if (user.status !== 'active') {
+        res.status(403);
+        throw new Error('User account is not active');
+      }
+
+      if (!user.role_id || !user.company_id) {
+        res.status(403);
+        throw new Error('User role or company is not configured');
+      }
+
+      user.last_login = new Date();
+      await user.save({ validateBeforeSave: false });
+
       res.json({
         _id: user._id,
         name: user.name,
         email: user.email,
-        role: user.role_id.role_name,
-        company: user.company_id.company_name,
+        role: user.role_id?.role_name || null,
+        company: user.company_id?.company_name || null,
         token: generateToken(user._id),
       });
-
-      // Update last login
-      user.last_login = Date.now();
-      await user.save();
     } else {
       res.status(401);
       throw new Error('Invalid email or password');
@@ -54,9 +90,10 @@ const getUserProfile = async (req, res, next) => {
         name: user.name,
         email: user.email,
         phone: user.phone,
-        role: user.role_id,
-        company: user.company_id,
+        role: user.role_id?.role_name || null,
+        company: user.company_id?.company_name || null,
         profile_photo: user.profile_photo,
+        status: user.status,
       });
     } else {
       res.status(404);
@@ -72,11 +109,25 @@ const getUserProfile = async (req, res, next) => {
 // @access  Public
 const registerUser = async (req, res, next) => {
   try {
-    const { name, email, password, company_name, phone } = req.body;
+    const name = normalizeString(req.body.name);
+    const email = normalizeEmail(req.body.email);
+    const password = req.body.password || '';
+    const company_name = normalizeString(req.body.company_name);
+    const phone = normalizeString(req.body.phone);
 
     if (!name || !email || !password || !company_name) {
       res.status(400);
       throw new Error('Name, email, password, and company name are required');
+    }
+
+    if (!isValidEmail(email)) {
+      res.status(400);
+      throw new Error('Invalid email address');
+    }
+
+    if (!isStrongPassword(password)) {
+      res.status(400);
+      throw new Error('Password must be at least 8 characters');
     }
 
     const userExists = await User.findOne({ email });
@@ -85,15 +136,15 @@ const registerUser = async (req, res, next) => {
       throw new Error('User already exists');
     }
 
-    let company =
-      (await Company.findOne({ email })) ||
-      (await Company.findOne({ company_name }));
+    let company = await Company.findOne({
+      $or: [{ email }, { company_name }],
+    });
 
     if (!company) {
       company = await Company.create({
         company_name,
         email,
-        phone,
+        phone: phone || undefined,
         status: 'active',
       });
     }
@@ -111,7 +162,7 @@ const registerUser = async (req, res, next) => {
       role_id: role._id,
       name,
       email,
-      phone,
+      phone: phone || undefined,
       password,
       status: 'active',
     });

@@ -23,8 +23,9 @@ const getUsers = async (req, res, next) => {
 const createUser = async (req, res, next) => {
   try {
     const { company_id, role_id, name, email, phone, password, status } = req.body;
+    const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
 
-    const userExists = await User.findOne({ email });
+    const userExists = await User.findOne({ email: normalizedEmail });
     if (userExists) {
       res.status(400);
       throw new Error('User already exists');
@@ -34,7 +35,7 @@ const createUser = async (req, res, next) => {
       company_id,
       role_id,
       name,
-      email,
+      email: normalizedEmail,
       phone,
       password,
       status,
@@ -65,7 +66,54 @@ const createUser = async (req, res, next) => {
   }
 };
 
+// @desc    Update a user's role
+// @route   PATCH /api/users/:id/role
+// @access  Private/SuperAdmin
+const updateUserRole = async (req, res, next) => {
+  try {
+    const { role_id } = req.body;
+
+    if (!role_id) {
+      res.status(400);
+      throw new Error('Role is required');
+    }
+
+    const role = await Role.findById(role_id);
+    if (!role) {
+      res.status(404);
+      throw new Error('Role not found');
+    }
+
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      res.status(404);
+      throw new Error('User not found');
+    }
+
+    user.role_id = role_id;
+    await user.save();
+
+    await ActivityLog.create({
+      user_id: req.user._id,
+      module_name: 'Core',
+      action: 'Update User Role',
+      description: `Role updated for user ${user.name}`,
+      ip_address: req.ip,
+    });
+
+    const updatedUser = await User.findById(user._id)
+      .populate('role_id', 'role_name')
+      .populate('company_id', 'company_name')
+      .select('-password');
+
+    res.json(updatedUser);
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getUsers,
   createUser,
+  updateUserRole,
 };

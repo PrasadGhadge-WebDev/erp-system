@@ -67,8 +67,27 @@ const addLeadNote = async (req, res, next) => {
   }
 };
 
+// @desc    Get all lead notes for company
+// @route   GET /api/leads/notes
+// @access  Private
+const getLeadNotes = async (req, res, next) => {
+  try {
+    const leads = await Lead.find({ company_id: req.user.company_id }).select('_id');
+    const leadIds = leads.map((lead) => lead._id);
+
+    const notes = await LeadNote.find({ lead_id: { $in: leadIds } })
+      .populate('lead_id', 'name')
+      .populate('user_id', 'name email')
+      .sort({ created_at: -1 });
+    res.json(notes);
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getLeads,
   createLead,
   addLeadNote,
+  getLeadNotes,
 };

@@ -1,43 +1,60 @@
 /* eslint-disable */
 
-import { HiX } from "react-icons/hi";
+import { MdRemove } from "react-icons/md";
 import Links from "./components/Links";
-
-import SidebarCard from "components/sidebar/componentsrtl/SidebarCard";
 import routes from "routes.js";
+import logo from "assets/img/logo/ERP_Logo.png";
 
 const Sidebar = ({ open, onClose }) => {
   return (
     <div
-      className={`sm:none duration-175 linear fixed !z-50 flex min-h-full flex-col bg-white pb-10 shadow-2xl shadow-white/5 transition-all dark:!bg-navy-800 dark:text-white md:!z-50 lg:!z-50 xl:!z-0 ${
+      className={`sm:hidden duration-175 linear fixed z-50 flex h-screen w-[270px] flex-col border-r border-gray-200 bg-white shadow-xl transition-all dark:border-white/10 dark:bg-navy-800 dark:text-white md:z-50 lg:z-50 xl:z-0 ${
         open ? "translate-x-0" : "-translate-x-96"
       }`}
     >
+      {/* Close button (mobile) */}
       <span
-        className="absolute top-4 block cursor-pointer end-4 xl:hidden"
+        className="absolute top-4 right-4 block cursor-pointer xl:hidden"
         onClick={onClose}
       >
-        <HiX />
+        <MdRemove className="h-5 w-5" />
       </span>
 
-      <div className={`mx-[56px] mt-[50px] flex items-center`}>
-        <div className="mt-1 h-2.5 font-poppins text-[26px] font-bold uppercase text-navy-700 ms-1 dark:text-white">
-          Horizon <span class="font-medium">FREE</span>
+      {/* Fixed Header */}
+      <div className="shrink-0 border-b border-gray-200 px-6 py-6 dark:border-white/10">
+        <div className="flex items-center gap-4">
+          <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl">
+            <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-emerald-400 via-cyan-400 to-blue-500 shadow-lg shadow-cyan-500/30 animate-pulse" />
+            <div className="absolute inset-0 rounded-2xl ring-1 ring-black/10 dark:ring-white/10" />
+            <img
+              src={logo}
+              alt="ERP Logo"
+              className="relative z-10 h-10 w-10 object-contain"
+            />
+          </div>
+          <div className="flex flex-col">
+            <span className="text-lg font-semibold text-navy-700 dark:text-white">
+              ERP SYSTEM
+            </span>
+            <span className="text-xs text-gray-500 dark:text-gray-400">
+              Enterprise Resource Planning
+            </span>
+            <span className="mt-1 w-fit rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.2em] text-gray-500 dark:bg-white/10 dark:text-white/70">
+              v1.0.0
+            </span>
+          </div>
         </div>
       </div>
-      <div class="mt-[58px] mb-7 h-px bg-gray-300 dark:bg-white/30" />
-      {/* Nav item */}
 
-      <ul className="mb-auto pt-1">
-        <Links routes={routes} />
-      </ul>
-
-      {/* Free Horizon Card */}
-      <div className="flex justify-center">
-        <SidebarCard />
+      {/* Scrollable Menu */}
+      <div
+        className="flex-1 overflow-y-auto px-3 py-5"
+        style={{ scrollbarGutter: "stable" }}
+      >
+        <ul className="space-y-1">
+          <Links routes={routes} />
+        </ul>
       </div>
-
-      {/* Nav item end */}
     </div>
   );
 };
